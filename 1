@@ -178,31 +178,27 @@
       setInterval(() => addClick(10), 200);
     }
 
-  function renderUpgrades() {
-  upgradesContainer.innerHTML = "";
-  upgrades.forEach((upg, i) => {
-    const currentCost = Math.floor(upg.costFn(upg.timesBought));
-    const div = document.createElement("div");
-    div.className = "upgrade";
-    div.textContent = `${upg.name} (${currentCost}) [gekauft: ${upg.timesBought}]`;
+    function renderUpgrades() {
+      upgradesContainer.innerHTML = "";
+      upgrades.forEach((upg, i) => {
+        const currentCost = Math.floor(upg.costFn(upg.timesBought));
+        const div = document.createElement("div");
+        div.className = "upgrade";
+        div.textContent = `${upg.name} (${currentCost}) [gekauft: ${upg.timesBought}]`;
 
-    if (count >= currentCost) {
-      div.onclick = () => {
         if (count >= currentCost) {
-          count -= currentCost;
-          upg.effect();
-          upg.timesBought++;
-          updateCounter();
-          renderUpgrades();
+          div.onclick = () => {
+            if (count >= currentCost) {
+              count -= currentCost;
+              upg.effect();
+              upg.timesBought++;
+              updateCounter();
+              renderUpgrades();
+            }
+          };
+        } else {
+          div.classList.add("locked");
         }
-      };
-    } else {
-      div.classList.add("locked");
-    }
-
-    upgradesContainer.appendChild(div);
-  });
-}
 
         upgradesContainer.appendChild(div);
       });
