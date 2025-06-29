@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <title>Godmode Clicker</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: #000;
+      color: #fff;
+      display: flex;
+      height: 100vh;
+      overflow: hidden;
+    }
+    #sidebar {
+      width: 300px;
+      background: #111;
+      padding: 20px;
+      overflow-y: auto;
+      border-right: 2px solid #333;
+    }
+    #main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+    }
+    #redButton {
+      width: 200px;
+      height: 200px;
+      border-radius: 50%;
+      border: none;
+      background: radial-gradient(circle at 30% 30%, #ff3c3c, #8b0000);
+      font-size: 1.5em;
+      color: white;
+      box-shadow: 0 0 20px #ff3c3c;
+      cursor: pointer;
+      transition: transform 0.1s;
+    }
+    #redButton:active { transform: scale(0.95); }
+    #counter {
+      position: absolute;
+      top: 20px;
+      right: 30px;
+      font-size: 1.5em;
+    }
+    .upgrade {
+      background: #222;
+      margin-bottom: 10px;
+      padding: 10px;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    .upgrade.locked {
+      background: #333;
+      color: #888;
+      cursor: not-allowed;
+    }
+    .fly {
+      position: absolute;
+      font-weight: bold;
+      color: #0f0;
+      pointer-events: none;
+      animation: flyUp 1s ease-out forwards;
+    }
+    @keyframes flyUp {
+      0% { opacity: 1; transform: translateY(0); }
+      100% { opacity: 0; transform: translateY(-100px) scale(0.7); }
+    }
+    body.godmode {
+      background: linear-gradient(45deg, #111, #550000, #111);
+      animation: pulse 3s linear infinite;
+    }
+    @keyframes pulse {
+      0% { background-position: 0% 50%; }
+      100% { background-position: 100% 50%; }
+    }
+    #secret {
+      margin-top: 30px;
+    }
+    #secret input {
+      width: 60px;
+      text-align: center;
+      margin-right: 5px;
+    }
+  </style>
+</head>
+<body>
+  <div id="sidebar">
+    <h2>Upgrades</h2>
+    <div id="upgrades"></div>
+  </div>
+  <div id="main">
+    <div id="counter">Klicks: 0</div>
+    <h1>Press the Button</h1>
+    <button id="redButton">KLICK MICH!</button>
+    <div id="secret">
+      <input type="number" id="secretInput" placeholder="Zahl" />
+      <button id="secretBtn">+</button>
+    </div>
+  </div>
+
+  <script>
+    let count = 0;
+    let multiplier = 1;
+    let godmode = false;
+
+    const redButton = document.getElementById("redButton");
+    const counterEl = document.getElementById("counter");
+    const upgradesContainer = document.getElementById("upgrades");
+
+    const upgrades = [
+      {
+        name: "x2 Multiplier",
+        baseCost: 100,
+        timesBought: 0,
+        costFn: lvl => 100 * Math.pow(2, lvl),
+        effect: () => { multiplier *= 2; }
+      },
+      {
+        name: "Autoklicker +1/sec",
+        baseCost: 250,
+        timesBought: 0,
+        costFn: lvl => 250 * Math.pow(1.5, lvl),
+        effect: () => { setInterval(() => addClick(multiplier), 1000); }
+      },
+      {
+        name: "Klick-Sturm +100",
+        baseCost: 500,
+        timesBought: 0,
+        costFn: lvl => 500 * (lvl + 1),
+        effect: () => { addClick(100); }
+      },
+      {
+        name: "Fake Klicks 💀 (+1.000)",
+        baseCost: 1000,
+        timesBought: 0,
+        costFn: lvl => 1000 * Math.pow(1.4, lvl),
+        effect: () => { addClick(1000); }
+      },
+      {
+        name: "💀 GODMODE 💀",
+        baseCost: 100000,
+        timesBought: 0,
+        costFn: () => 100000,
+        effect: () => activateGodmode()
+      }
+    ];
+
+    function updateCounter() {
+      counterEl.textContent = "Klicks: " + (godmode ? "∞" : Math.floor(count));
+    }
+
+    function addClick(amount) {
+      if (!godmode) count += amount;
+      const fly = document.createElement("div");
+      fly.className = "fly";
+      fly.textContent = "+" + amount;
+      const rect = redButton.getBoundingClientRect();
+      fly.style.left = rect.left + Math.random() * rect.width + "px";
+      fly.style.top = rect.top + Math.random() * rect.height + "px";
+      document.body.appendChild(fly);
+      setTimeout(() => fly.remove(), 1000);
+      updateCounter();
+      renderUpgrades();
+    }
+
+    redButton.addEventListener("click", () => addClick(multiplier));
+
+    function activateGodmode() {
+      godmode = true;
+      document.body.classList.add("godmode");
+      redButton.style.background = "gold";
+      setInterval(() => addClick(10), 200);
+    }
+
+    function renderUpgrades() {
+      upgradesContainer.innerHTML = "";
+      upgrades.forEach((upg, i) => {
+        const currentCost = Math.floor(upg.costFn(upg.timesBought));
+        const div = document.createElement("div");
+        div.className = "upgrade";
+        div.textContent = `${upg.name} (${currentCost}) [gekauft: ${upg.timesBought}]`;
+
+        if (count >= currentCost) {
+          div.onclick = () => {
+            if (count >= currentCost) {
+              count -= currentCost;
+              upg.effect();
+              upg.timesBought++;
+              updateCounter();
+              renderUpgrades();
+            }
+          };
+        } else {
+          div.classList.add("locked");
+        }
+
+        upgradesContainer.appendChild(div);
+      });
+    }
+
+    document.getElementById("secretBtn").addEventListener("click", () => {
+      const val = parseInt(document.getElementById("secretInput").value);
+      if (val === 25) {
+        addClick(234235);
+        alert("Geheime Zahl aktiviert! 💰");
+      } else {
+        alert("Falsche Zahl 😬");
+      }
+    });
+
+    // Start
+    updateCounter();
+    renderUpgrades();
+  </script>
+</body>
+</html>
